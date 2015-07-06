@@ -10,7 +10,8 @@ can be passed to any pyo object and will update in real time.
 The values specified in this class assumes a gamecube controller with a 
 mayflash two port adapter, the names and the amount of actual inputs may be
 different with different controllers, adapt this class to them if other models
-of controller/adapters are used."""
+of controller/adapters are used. Each button name in the values dictionary
+also have a pyo trigger output at name+"_t". """
     def __init__(self,joynb=0):
         #Mayflash 2 port gamecube->usb adapter to sdl input mapping. d means digital
         #and a means analog. This is the thing you have to change
@@ -37,18 +38,24 @@ of controller/adapters are used."""
         for k in self.button_mappings:
             vals = self.button_mappings[k]
             self.values[k].setValue(functions[vals[1]](vals[0]))
+            self.values[k+"_t"] = Tresh(self.values[k], threshold=0.8)
 
     def out(self):
         self.stream = self.last_audio_object.out()
 
 
-class SimpleSynthBlam(JSynth):
+class SimpleSynthBase(JSynth):
     def __init__(self,joynb=0):
         JSynth.__init__(self)
         self.osc = LFO(freq=500+(self.values["l_analog"]+self.values["r_analog"]-1)*250)
         self.snd = SndTable(["tlick.wav","pouc.wav","ptoui.wav","tchou.wav"])
-        self.trigger = Thresh([self.values["a"],self.values["b"],self.values["x"],self.values["y"]],threshold=0.9)
-        self.reader = TrigEnv(self.trigger, table=self.snd, dur=self.snd.getDur()).out()
+        self.reader = TrigEnv([self.values["a_t"],self.values["b_t"],self.values["x_t"],self.values["y_t"]],
+            table=self.snd, dur=self.snd.getDur()).out()
         self.filtr = Biquad(self.osc, freq=700+self.values["left_stick_x"]*600, q=20+self.values["left_stick_y"]*19, mul=0.2)
+        #important or the out method wont work.
         self.last_audio_object = self.filtr
+        
+class NiftyExtraSpecialSynth(JSynth):
+    def __init__(self, joynb=0):
+        JSynth.__init__(self)
         

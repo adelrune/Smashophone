@@ -3,7 +3,7 @@ from pyo import *
 from jsynth import *
 s = Server().boot()
 pygame.init()
-ssb = SimpleSynthBlam()
+ssb = SimpleSynthBase()
 
 ssb.out()
 
