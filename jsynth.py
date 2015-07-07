@@ -2,29 +2,31 @@ from __future__ import division
 import pygame
 from pyo import *
 
+gc_mayflash_2_ports = {"a":(1,"d"), "b":(2,"d"), "x":(0,"d"),
+    "y":(3,"d"), "start":(9,"d"), "l_digital":(4,"d"),
+    "r_digital":(5,"d"),"dpad_u":(12,"d"), "dpad_d":(14,"d"), 
+    "dpad_l":(15,"d"), "dpad_r":(13,"d"), "left_stick_y":(1,"a"), 
+    "left_stick_x":(0,"a"), "right_stick_y":(2,"a"),
+    "right_stick_x":(5,"a"), "l_analog":(3,"a"),"r_analog":(4,"a"),
+    "z":(7,"d")
+}
+
 class JSynth:
     """This is a basic class that defines a metronome calling a value fetching fuction
-60 times a second. The basic values included in this class are pyo Sigs which
+60 times a second. The button values are fetched from the controller mapping argument
+which should be a dictionnary with input names as keys and a tuple containing the 
+sdl maping of the input as the first element and a string equal to "a" if the input
+is analogue, "d" if the input is digital or "b" if the input is a trackball.
+The basic values generated from the inputs are pyo Sigs which
 can be passed to any pyo object and will update in real time.
-
-The values specified in this class assumes a gamecube controller with a 
-mayflash two port adapter, the names and the amount of actual inputs may be
-different with different controllers, adapt this class to them if other models
-of controller/adapters are used. Each button name in the values dictionary
+Each button name in the values dictionary
 also have a pyo trigger output at name+"_t". """
-    def __init__(self,joynb=0):
+    def __init__(self,controller_mapping, joynb=0):
         #Mayflash 2 port gamecube->usb adapter to sdl input mapping. d means digital
         #and a means analog. This is the thing you have to change
         self._joystick = pygame.joystick.Joystick(joynb)
         self._joystick.init()
-        self.button_mappings = {"a":(1,"d"), "b":(2,"d"), "x":(0,"d"),
-            "y":(3,"d"), "start":(9,"d"), "l_digital":(4,"d"),
-            "r_digital":(5,"d"),"dpad_u":(12,"d"), "dpad_d":(14,"d"), 
-            "dpad_l":(15,"d"), "dpad_r":(13,"d"), "left_stick_y":(1,"a"), 
-            "left_stick_x":(0,"a"), "right_stick_y":(2,"a"),
-            "right_stick_x":(5,"a"), "l_analog":(3,"a"),"r_analog":(4,"a"),
-            "z":(7,"d")
-        }
+        self.button_mappings = controller_mapping
         self.values = {}
         for k in self.button_mappings:
             self.values[k] = Sig(0)
@@ -46,7 +48,7 @@ also have a pyo trigger output at name+"_t". """
 
 class SimpleSynthBase(JSynth):
     def __init__(self,joynb=0):
-        JSynth.__init__(self)
+        JSynth.__init__(self, gc_mayflash_2_ports, joynb)
         self.osc = LFO(freq=500+(self.values["l_analog"]+self.values["r_analog"]-1)*250)
         self.snd = SndTable(["tlick.wav","pouc.wav","ptoui.wav","tchou.wav"])
         self.reader = TrigEnv([self.values["a_t"],self.values["b_t"],self.values["x_t"],self.values["y_t"]],
