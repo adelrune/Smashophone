@@ -29,7 +29,10 @@ also have a pyo trigger output at name+"_t". """
         self.button_mappings = controller_mapping
         self.values = {}
         for k in self.button_mappings:
-            self.values[k] = Sig(0)
+            if self.button_mappings[k][1] == "d":
+                self.values[k] = Sig(0)
+            else:
+                self.values[k] = SigTo(0)
             self.values[k+"_t"] = Thresh(self.values[k], threshold=0.8)
         self.metronome = Metro(1/60).play()
         self.t_f = TrigFunc(self.metronome, self.update)
@@ -46,18 +49,19 @@ also have a pyo trigger output at name+"_t". """
         self.stream = self.last_audio_object.out()
 
 
-class SimpleSynthBase(JSynth):
+class ExampleSynth(JSynth):
     def __init__(self,joynb=0):
         JSynth.__init__(self, gc_mayflash_2_ports, joynb)
-        self.osc = LFO(freq=500+(self.values["l_analog"]+self.values["r_analog"]-1)*250)
+        self.osc_beat = Metro(time=[1/2, 1/3]).play()
+        self.osc_envelope = TrigExpseg(self.osc_beat, list=[(0,0),(0.06,1),(0.3,0)], exp=3)
+        self.osc = LFO(freq=[700+(self.values["r_analog"])*430,
+            300+(self.values["l_analog"])*130
+            ], sharp=self.values["left_stick_y"], mul=self.osc_envelope
+        )
         self.snd = SndTable(["tlick.wav","pouc.wav","ptoui.wav","tchou.wav"])
         self.reader = TrigEnv([self.values["a_t"],self.values["b_t"],self.values["x_t"],self.values["y_t"]],
-            table=self.snd, dur=self.snd.getDur()).out()
-        self.filtr = Biquad(self.osc, freq=700+self.values["left_stick_x"]*600, q=20+self.values["left_stick_y"]*19, mul=0.2)
+            table=self.snd, dur=self.snd.getDur(), mul=0.8)
+        self.filtr = Biquad(self.osc, freq=1000+self.values["left_stick_x"]*800, q=20+self.values["left_stick_y"]*19, mul=0.2)
         #important or the out method wont work.
-        self.last_audio_object = self.filtr
-        
-class NiftyExtraSpecialSynth(JSynth):
-    def __init__(self, joynb=0):
-        JSynth.__init__(self)
-        
+        self.last_audio_object = Pan((self.reader+self.filtr).mix())
+
