@@ -1,5 +1,6 @@
 import jsynth
 from pyo import *
+from __future__ import division
 
 class ExampleSynth(jsynth.JSynth):
     def __init__(self,joynb=0):
