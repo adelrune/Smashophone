@@ -28,6 +28,7 @@ also have a pyo trigger output at name+"_t". """
         self.values = {}
         for k in self.button_mappings:
             self.values[k] = Sig(0)
+            self.values[k+"_t"] = Thresh(self.values[k], threshold=0.8)
         self.metronome = Metro(1/60).play()
         self.t_f = TrigFunc(self.metronome, self.update)
 
@@ -38,7 +39,6 @@ also have a pyo trigger output at name+"_t". """
         for k in self.button_mappings:
             vals = self.button_mappings[k]
             self.values[k].setValue(functions[vals[1]](vals[0]))
-            self.values[k+"_t"] = Tresh(self.values[k], threshold=0.8)
 
     def out(self):
         self.stream = self.last_audio_object.out()
